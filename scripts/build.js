@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
 /**
- * Build script for BLT-on-Cloudflare
- * Extracts HTML template from Worker and generates static index.html
+ * Build script for BLT-on-Cloudflare Pages
+ * Extracts HTML template from source and generates static index.html for Pages deployment
  */
 
 const fs = require('fs');
@@ -16,14 +16,17 @@ try {
   // Read the Worker source file
   const indexJs = fs.readFileSync(srcPath, 'utf8');
   
-  // Extract HTML template
-  const match = indexJs.match(/const HTML_TEMPLATE = `([\s\S]*?)`;\s*export default/);
+  // Extract HTML template using a delimited pattern
+  // The pattern looks for: const HTML_TEMPLATE = `...`; followed by export default
+  const templateStart = indexJs.indexOf('const HTML_TEMPLATE = `');
+  const templateEnd = indexJs.indexOf('`;\n\nexport default', templateStart);
   
-  if (!match) {
-    throw new Error('Could not extract HTML template from src/index.js');
+  if (templateStart === -1 || templateEnd === -1) {
+    throw new Error('Could not extract HTML template from src/index.js. Expected format: const HTML_TEMPLATE = `...`; followed by export default');
   }
   
-  const htmlContent = match[1];
+  // Extract the content between the backticks
+  const htmlContent = indexJs.substring(templateStart + 'const HTML_TEMPLATE = `'.length, templateEnd);
   
   // Ensure public directory exists
   if (!fs.existsSync(publicPath)) {
